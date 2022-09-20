@@ -1,6 +1,6 @@
 import { useState } from "react";
-import * as React from 'react'
-import { withServerState } from '../lib/server.tsx'
+import * as React from "react";
+import { withServerState } from "../lib/server.tsx";
 
 function Home({ data }: { data: number }) {
   console.log("Hello world!", data);
@@ -13,11 +13,10 @@ function Home({ data }: { data: number }) {
       </h1>
       <p>
         Welcome to{" "}
-        <strong>Ultra</strong>. This is a barbones starter for your web
-        app.
+        <strong>Ultra</strong>. This is a barbones starter for your web app.
       </p>
     </main>
   );
 }
 
-export default withServerState('bananas', () => Promise.resolve(123))(Home)
+export default withServerState("bananas", () => Promise.resolve(123))(Home);

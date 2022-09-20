@@ -1,19 +1,19 @@
-import * as esbuild from 'esbuild'
+import * as esbuild from "esbuild";
 
 // TODO: Transform source should strip out server code
 export async function transformSource(
   source: string,
   development = true,
 ): Promise<{ code: string; map?: string }> {
-  const transformed = await esbuild.transform(source, { 
+  const transformed = await esbuild.transform(source, {
     define: {
-      '__BUNDLER__': 'true',
+      "__BUNDLER__": "true",
     },
-    loader: 'tsx',
+    loader: "tsx",
     minifySyntax: true,
     treeShaking: true,
     minify: true,
-  })
+  });
 
   if (!transformed.code.includes("/** @jsx")) {
     transformed.code = addJsxPragmas(transformed.code);
