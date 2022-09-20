@@ -49,7 +49,8 @@ function DeferredComponent<T>(
   }
   if (typeof window !== "undefined" && !window["Deno"]) {
     // @ts-ignore: no you cannot use refs
-    state = JSON.parse(document.querySelector("#" + id).innerText);
+    const raw = document.querySelector("#" + id)?.innerText;
+    state = raw ? JSON.parse(raw) : {};
     // state = JSON.parse(ref.current.innerText)
   }
 
