@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0?dev",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/server": "https://esm.sh/react-dom@18.2.0/server?dev",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.4.0?external=react",
+    "react-router-dom/server": "https://esm.sh/react-router-dom@6.4.0/server?external=react",
+    "esbuild": "https://deno.land/x/esbuild@v0.15.8/mod.js"
+  }
+}
