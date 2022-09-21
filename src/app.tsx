@@ -19,7 +19,7 @@ function Home({ data }: { data: number }) {
   );
 }
 
-export default withServerState("bananas", async () => {
-  await new Promise((r) => setTimeout(r, 2000));
+export default withServerState(import.meta.url, async () => {
+  await new Promise((r) => setTimeout(r, 500));
   return Promise.resolve(123);
-})(Home)
+})(Home);

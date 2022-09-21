@@ -27,6 +27,7 @@ for await (const entry of walk(BASE_PATH)) {
     pattern: entry.path
       .replace(BASE_PATH, "")
       .replace(ext, "")
+      // TODO: add index functionality
       .replaceAll("$", ":"),
     isLayout: entry.name.startsWith("_layout"),
   });
@@ -46,9 +47,9 @@ serve(handler(async (req: Request) => {
           return entry.pattern
             .includes(layout.pattern.replace("_layout", ""));
         })
-        .map((layout) => './' + layout.path);
+        .map((layout) => "./" + layout.path);
 
-      console.log(layouts)
+      console.log(layouts);
 
       return new Response(await ssr(req, "./" + entry.path, layouts));
     }

@@ -1,5 +1,8 @@
-import { createContext, Suspense, useContext, useRef } from "react";
+/// <reference lib="dom" />
+
+import { createContext, Suspense, useContext, useState } from "react";
 import * as React from "react";
+import { isomorphicPath } from "./isomorphic-path.ts";
 
 function _suspender<T>(exec: Promise<T>) {
   let status = "pending";
@@ -40,8 +43,6 @@ function DeferredComponent<T>(
     render: (result: T) => React.ReactElement;
   },
 ) {
-  // @ts-ignore: test
-  const ref = useRef(null);
 
   let state;
   if (typeof window !== "undefined" && "Deno" in window) {
@@ -49,7 +50,7 @@ function DeferredComponent<T>(
   }
   if (typeof window !== "undefined" && !window["Deno"]) {
     // @ts-ignore: no you cannot use refs
-    const raw = document.querySelector("#" + id)?.innerText;
+    const raw = document.querySelector(`[id='${id}']`)?.innerText;
     state = raw ? JSON.parse(raw) : {};
     // state = JSON.parse(ref.current.innerText)
   }
@@ -58,7 +59,7 @@ function DeferredComponent<T>(
     <>
       <script
         id={id}
-        ref={ref}
+        className="__serialized-state"
         type="application/json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: JSON.stringify(state) }}
@@ -79,22 +80,43 @@ export function withServerState<T>(
   id: string,
   exec: (req: Request) => Promise<T>,
 ) {
-  return (Component: React.FC<{ data: T }>) => () => {
+  return (Component: React.FC<React.PropsWithChildren & { data: T, invalidate: () => void, invalidating: boolean }>) => ({ children }: any = { children: null }) => {
+    const _id = isomorphicPath(id)
     const req = useContext(RequestCtx);
+    const [, _rerender] = useState(Symbol())
+    const [invalidating, setInvalidating] = useState(false)
+    const suspended = _suspender(exec ? exec(req!) : Promise.resolve(null));
 
-    let suspended;
-    if (BUNDLER) {
-      suspended = _suspender(Promise.resolve(null));
-    } else {
-      suspended = _suspender(exec(req!));
+    const invalidate = async () => {
+      setInvalidating(true)
+
+      const l = new URL(window.location.href)
+      l.searchParams.set('__state', 'true')
+      const raw = await fetch(l.toString()).then(res => res.text()) 
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(raw, 'text/html')
+      const states = Array.from(doc.querySelectorAll('.__serialized-state'))
+
+      for (const state of states) {
+        const existingStateEl = document.querySelector(`[id='${state.id}']`)
+        existingStateEl?.replaceWith(state)
+      }
+
+      // _rerender(Symbol())
+      setInvalidating(false)
     }
 
     return (
       <Suspense fallback={"⏳ loading..."}>
         <DeferredComponent
-          id={id}
+          id={_id}
           suspended={suspended}
-          render={(result) => <Component data={result!} />}
+          render={(result) => <Component 
+            data={result!} 
+            children={children} 
+            invalidate={invalidate} 
+            invalidating={invalidating}
+          />}
         />
       </Suspense>
     );
