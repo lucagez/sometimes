@@ -28,14 +28,14 @@ const loader = withServerState(import.meta.url, async () => {
 // - refactor typings!!!
 
 const Form = withServerMutation(import.meta.url, async (req: Request) => {
-  const data = await req.formData()
-  const email = data.get('email')
+  const data = await req.formData();
+  const email = data.get("email");
 
-  if (!email?.toString().endsWith('@gmail.com')) {
+  if (!email?.toString().endsWith("@gmail.com")) {
     return {
       // result: "",
       errors: {
-        email: 'Please provide an email ending with @gmail.com'
+        email: "Please provide an email ending with @gmail.com",
       },
     };
   }
@@ -46,34 +46,42 @@ const Form = withServerMutation(import.meta.url, async (req: Request) => {
   };
 });
 
-export default loader(({ children, data, invalidate, invalidating, result, errors }) => {
-  console.log("meta dashboard", isomorphicPath(import.meta.url), data);
-  const mutationResult = result as any
-  return (
-    <div>
-      <h1 onClick={invalidate}>This is a layout</h1>
-      <nav>
-        {invalidating && <p>Fetching new routes ...</p>}
-        <ul>
-          {data.map((x, i) => (
-            <li key={i}>
-              <a href={x}>{x}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+export default loader(
+  ({ children, data, invalidate, invalidating, result, errors }) => {
+    console.log("meta dashboard", isomorphicPath(import.meta.url), data);
+    const mutationResult = result as any;
+    return (
       <div>
-        <h3>Some form</h3>
-        <Form>
-          <input type={"text"} name="email" placeholder="your@email.com" />
-          {errors?.email && <span>Please provide a valid email {errors?.email}</span>}
-          <button type={"submit"}>Submit</button>
-        </Form>
+        <h1 onClick={invalidate}>This is a layout</h1>
+        <nav>
+          {invalidating && <p>Fetching new routes ...</p>}
+          <ul>
+            {data.map((x, i) => (
+              <li key={i}>
+                <a href={x}>{x}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div>
+          <h3>Some form</h3>
+          <Form>
+            <input type={"text"} name="email" placeholder="your@email.com" />
+            {errors?.email && (
+              <span>Please provide a valid email {errors?.email}</span>
+            )}
+            <button type={"submit"}>Submit</button>
+          </Form>
+        </div>
+        {mutationResult && (
+          <h3>
+            Mutation executed correctly <span>{String(mutationResult)}</span>
+          </h3>
+        )}
+        <div>
+          {children}
+        </div>
       </div>
-      {mutationResult && (<h3>Mutation executed correctly <span>{String(mutationResult)}</span></h3>)}
-      <div>
-        {children}
-      </div>
-    </div>
-  );
-});
+    );
+  },
+);

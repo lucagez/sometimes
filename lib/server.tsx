@@ -40,31 +40,37 @@ function DeferredComponent<T, K>(
   { suspended, id, render }: {
     suspended: { read: () => T };
     id: string;
-    render: (state: T, result: K, errors?: Record<string, string>) => React.ReactElement;
+    render: (
+      state: T,
+      result: K,
+      errors?: Record<string, string>,
+    ) => React.ReactElement;
   },
 ) {
   let mutationResult: K;
   let mutationErrors = {} as Record<string, string>;
 
   // MUTATION CASE
-  const req = useContext(RequestCtx)
-  const url = req && new URL(req.url)
-  const mutation = url?.searchParams.get('__mutation') 
+  const req = useContext(RequestCtx);
+  const url = req && new URL(req.url);
+  const mutation = url?.searchParams.get("__mutation");
   if (req && mutation) {
     // TODO: Handle decryption + errors cases
-    const { result, errors } = JSON.parse(atob(mutation)) || {}
-    
-    mutationErrors = errors
-    mutationResult = result
-    console.log('decoded state', { result, errors })
+    const { result, errors } = JSON.parse(atob(mutation)) || {};
+
+    mutationErrors = errors;
+    mutationResult = result;
+    console.log("decoded state", { result, errors });
   }
   if (typeof window !== "undefined" && !window["Deno"]) {
     // @ts-ignore: TODO: fix -> no you cannot use refs
-    const rawMutation = document.querySelector(`[id='__mutation_result_${id}']`)?.innerText;
+    const rawMutation = document.querySelector(`[id='__mutation_result_${id}']`)
+      ?.innerText;
     mutationResult = rawMutation && JSON.parse(rawMutation);
 
     // @ts-gnore: TODO: fix
-    const rawErrors = document.querySelector(`[id='__mutation_errors_${id}']`)?.innerText;
+    const rawErrors = document.querySelector(`[id='__mutation_errors_${id}']`)
+      ?.innerText;
     mutationErrors = rawErrors ? JSON.parse(rawErrors) : {};
   }
 
@@ -91,14 +97,17 @@ function DeferredComponent<T, K>(
       >
       </script>
       <script
-        id={'__mutation_result_' + id}
+        id={"__mutation_result_" + id}
         className="__serialized-mutation-result"
         type="application/json"
         suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(mutationResult! || '') }}
-      ></script>
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(mutationResult! || ""),
+        }}
+      >
+      </script>
       <script
-        id={'__mutation_errors_' + id}
+        id={"__mutation_errors_" + id}
         className="__serialized-mutation-errors"
         type="application/json"
         suppressHydrationWarning
@@ -126,8 +135,8 @@ export function withServerState<T, K>(
         data: T;
         invalidate: () => void;
         invalidating: boolean;
-        result: K,
-        errors?: Record<string, string>
+        result: K;
+        errors?: Record<string, string>;
       }
     >,
   ) =>
