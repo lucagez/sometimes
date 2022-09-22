@@ -5,6 +5,7 @@ import { match } from "./lib/router.ts";
 // import { glob } from "https://deno.land/std@0.153.0/path/glob.ts";
 import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { common, extname } from "https://deno.land/std@0.153.0/path/mod.ts";
+import { mutations } from "./lib/server.tsx";
 
 declare global {
   let BUNDLER: boolean;
@@ -36,6 +37,15 @@ for await (const entry of walk(BASE_PATH)) {
 console.log(entries);
 
 serve(handler(async (req: Request) => {
+  // TODO: there's a bug:
+  // mutations are registered only after first render
+  // and stay in memory after. If the runtime is recycled while
+  // the render already happened, there's going to be no mutation
+  // listening. Should fix (:
+  // 👉 console.log(mutations)
+  // POTENTIAL SOLUTION: Should anyway implement
+  // csrf tokens. So, no idea how this can change stuff but it should
+
   for (const entry of entries) {
     const params = match(entry.pattern).test(req);
 
@@ -49,9 +59,34 @@ serve(handler(async (req: Request) => {
         })
         .map((layout) => "./" + layout.path);
 
-      console.log(layouts);
-
       return new Response(await ssr(req, "./" + entry.path, layouts));
+    }
+  }
+
+  if (req.method === "POST" && req.url.includes("/actions")) {
+    for (const mutation of mutations) {
+      if (!req.url.endsWith(mutation.path)) continue;
+
+      const referer = req.headers.get("referer");
+
+      // TODO: what if?
+      if (!referer) {
+        throw new Error("What to do?");
+      }
+
+      // TODO: Should encrypt
+      // TODO: Handle errors
+      const result = await mutation.mutation(req);
+      const encoded = btoa(JSON.stringify(result));
+      const redirect = new URL(referer);
+      redirect.searchParams.set("__mutation", encoded);
+
+      return new Response(null, {
+        status: 301,
+        headers: {
+          Location: redirect.pathname + redirect.search,
+        },
+      });
     }
   }
 
