@@ -1,5 +1,4 @@
 import * as React from "react";
-import { isomorphicPath } from "../lib/isomorphic-path.ts";
 import { withServerMutation, withServerState } from "../lib/server.tsx";
 import { add } from "../server/some-func.ts";
 
@@ -10,24 +9,17 @@ let routes = ["/app", "/about/me", "/blog"];
 // }, 1000)
 
 // deno-lint-ignore require-await
-const loader = withServerState(import.meta.url, async () => {
+const loader = withServerState<string[], string>(import.meta.url, async () => {
   return routes;
 });
 
-// TODO: in order to eliminate server code:
-// - Wrap everything in #SERVER comment.
-// - replace loader with withServerState(import.meta.url, Promise.resolve(null))
-
 // RIPARTIRE QUI!<--
-// - guardare sopra ☝️
-// - refactor mutations
+// - Wrap everything in #SERVER comment.
+// - scope everything to BASE_PATH directory. Destroy everything else from bundle
 // - implement secure mutations
 // - implement csrf tokens (evaluate?)
-// - implement js mutations (with DOMParser)
-// - refactor BASE_PATH!!!
-// - refactor typings!!!
 
-const Form = withServerMutation(import.meta.url, async (req: Request) => {
+withServerMutation<string>(import.meta.url, async (req: Request) => {
   const data = await req.formData();
   const email = data.get("email");
 
@@ -42,14 +34,22 @@ const Form = withServerMutation(import.meta.url, async (req: Request) => {
 
   return {
     result: "success! registered email " + email,
-    errors: {},
   };
 });
 
 export default loader(
-  ({ children, data, invalidate, invalidating, result, errors }) => {
-    console.log("meta dashboard", isomorphicPath(import.meta.url), data);
-    const mutationResult = result as any;
+  (
+    {
+      children,
+      data,
+      invalidate,
+      invalidating,
+      result,
+      errors,
+      Form,
+      mutating,
+    },
+  ) => {
     return (
       <div>
         <h1 onClick={invalidate}>This is a layout</h1>
@@ -67,17 +67,23 @@ export default loader(
           <h3>Some form</h3>
           <Form>
             <input type={"text"} name="email" placeholder="your@email.com" />
-            {errors?.email && (
-              <span>Please provide a valid email {errors?.email}</span>
-            )}
-            <button type={"submit"}>Submit</button>
+            <div>
+              {errors?.email && (
+                <span>Please provide a valid email {errors?.email}</span>
+              )}
+            </div>
+            <button type={"submit"} disabled={mutating}>
+              {mutating ? "Loading..." : "Submit"}
+            </button>
           </Form>
         </div>
-        {mutationResult && (
-          <h3>
-            Mutation executed correctly <span>{String(mutationResult)}</span>
-          </h3>
-        )}
+        <div>
+          {result && (
+            <h3>
+              Mutation executed correctly <span>{result}</span>
+            </h3>
+          )}
+        </div>
         <div>
           {children}
         </div>

@@ -2,20 +2,26 @@ import { serve } from "https://deno.land/std@0.153.0/http/server.ts";
 import { ssr } from "./lib/ssr.tsx";
 import { handler } from "./lib/handler.ts";
 import { match } from "./lib/router.ts";
-// import { glob } from "https://deno.land/std@0.153.0/path/glob.ts";
 import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { common, extname } from "https://deno.land/std@0.153.0/path/mod.ts";
 import { mutations } from "./lib/server.tsx";
+import { join } from "https://deno.land/std@0.153.0/path/win32.ts";
 
 declare global {
   let BUNDLER: boolean;
+  let SECRET: string;
+  let BASE_PATH: string;
 
   interface Window {
     BUNDLER: boolean;
+    SECRET: string;
+    BASE_PATH: string;
   }
 }
 
-const BASE_PATH = "src";
+window.BASE_PATH = "src";
+window.SECRET = "change_me";
+
 const entries: Array<WalkEntry & { pattern: string; isLayout: boolean }> = [];
 for await (const entry of walk(BASE_PATH)) {
   const ext = extname(entry.path);
@@ -34,18 +40,7 @@ for await (const entry of walk(BASE_PATH)) {
   });
 }
 
-console.log(entries);
-
 serve(handler(async (req: Request) => {
-  // TODO: there's a bug:
-  // mutations are registered only after first render
-  // and stay in memory after. If the runtime is recycled while
-  // the render already happened, there's going to be no mutation
-  // listening. Should fix (:
-  // 👉 console.log(mutations)
-  // POTENTIAL SOLUTION: Should anyway implement
-  // csrf tokens. So, no idea how this can change stuff but it should
-
   for (const entry of entries) {
     const params = match(entry.pattern).test(req);
 
@@ -63,7 +58,12 @@ serve(handler(async (req: Request) => {
     }
   }
 
-  if (req.method === "POST" && req.url.includes("/actions")) {
+  if (req.method === "POST" && req.url.includes("/actions/")) {
+    // Preload mutation. This is cached no worries
+    await import(
+      req.url.replace(/.*\/actions\//, "./" + join(".", BASE_PATH) + "/")
+    );
+
     for (const mutation of mutations) {
       if (!req.url.endsWith(mutation.path)) continue;
 

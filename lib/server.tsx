@@ -38,11 +38,11 @@ function _suspender<T>(exec: Promise<T>) {
 
 function DeferredComponent<T, K>(
   { suspended, id, render }: {
-    suspended: { read: () => T };
+    suspended: { read: () => T | null };
     id: string;
     render: (
       state: T,
-      result: K,
+      result?: K,
       errors?: Record<string, string>,
     ) => React.ReactElement;
   },
@@ -60,16 +60,17 @@ function DeferredComponent<T, K>(
 
     mutationErrors = errors;
     mutationResult = result;
-    console.log("decoded state", { result, errors });
   }
   if (typeof window !== "undefined" && !window["Deno"]) {
-    // @ts-ignore: TODO: fix -> no you cannot use refs
-    const rawMutation = document.querySelector(`[id='__mutation_result_${id}']`)
+    const rawMutation = document.querySelector<HTMLElement>(
+      `[id='__mutation_result_${id}']`,
+    )
       ?.innerText;
     mutationResult = rawMutation && JSON.parse(rawMutation);
 
-    // @ts-gnore: TODO: fix
-    const rawErrors = document.querySelector(`[id='__mutation_errors_${id}']`)
+    const rawErrors = document.querySelector<HTMLElement>(
+      `[id='__mutation_errors_${id}']`,
+    )
       ?.innerText;
     mutationErrors = rawErrors ? JSON.parse(rawErrors) : {};
   }
@@ -80,10 +81,8 @@ function DeferredComponent<T, K>(
     state = suspended.read();
   }
   if (typeof window !== "undefined" && !window["Deno"]) {
-    // @ts-ignore: no you cannot use refs
-    const raw = document.querySelector(`[id='${id}']`)?.innerText;
+    const raw = document.querySelector<HTMLElement>(`[id='${id}']`)?.innerText;
     state = raw ? JSON.parse(raw) : {};
-    // state = JSON.parse(ref.current.innerText)
   }
 
   return (
@@ -114,14 +113,14 @@ function DeferredComponent<T, K>(
         dangerouslySetInnerHTML={{ __html: JSON.stringify(mutationErrors) }}
       >
       </script>
-      {render(state, mutationResult, mutationErrors)}
+      {render(state, mutationResult!, mutationErrors)}
     </>
   );
 }
 
 export const RequestCtx = createContext<Request | null>(null);
 
-if (typeof BUNDLER === "undefined") {
+if (typeof window.BUNDLER === "undefined") {
   window.BUNDLER = false;
 }
 
@@ -135,17 +134,45 @@ export function withServerState<T, K>(
         data: T;
         invalidate: () => void;
         invalidating: boolean;
-        result: K;
+        result?: K;
         errors?: Record<string, string>;
+        mutating: boolean;
+        Form: React.FC<React.PropsWithChildren>;
       }
     >,
-  ) =>
-  ({ children }: any = { children: null }) => {
+  ): React.FC<React.PropsWithChildren> =>
+  ({ children }) => {
     const _id = isomorphicPath(id);
     const req = useContext(RequestCtx);
-    const [, _rerender] = useState(Symbol());
     const [invalidating, setInvalidating] = useState(false);
+    const [mutating, setMutating] = useState(false);
     const suspended = _suspender(exec ? exec(req!) : Promise.resolve(null));
+    const patchSerializedStates = (raw: string) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(raw, "text/html");
+      const states = Array.from(doc.querySelectorAll(".__serialized-state"));
+      const results = Array.from(
+        doc.querySelectorAll(".__serialized-mutation-result"),
+      );
+      const errors = Array.from(
+        doc.querySelectorAll(".__serialized-mutation-errors"),
+      );
+
+      for (const state of states) {
+        const existingStateEl = document.querySelector(`[id='${state.id}']`);
+        existingStateEl?.replaceWith(state);
+      }
+
+      for (const result of results) {
+        const existingResultEl = document.querySelector(`[id='${result.id}']`);
+        existingResultEl?.replaceWith(result);
+      }
+
+      for (const error of errors) {
+        const existingErrorEl = document.querySelector(`[id='${error.id}']`);
+        existingErrorEl?.replaceWith(error);
+      }
+    };
 
     const invalidate = async () => {
       setInvalidating(true);
@@ -153,22 +180,48 @@ export function withServerState<T, K>(
       const l = new URL(window.location.href);
       l.searchParams.set("__state", "true");
       const raw = await fetch(l.toString()).then((res) => res.text());
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(raw, "text/html");
-      const states = Array.from(doc.querySelectorAll(".__serialized-state"));
+      patchSerializedStates(raw);
 
-      for (const state of states) {
-        const existingStateEl = document.querySelector(`[id='${state.id}']`);
-        existingStateEl?.replaceWith(state);
-      }
-
-      // _rerender(Symbol())
       setInvalidating(false);
+    };
+
+    const Form: React.FC<React.PropsWithChildren> = (
+      { children },
+    ) => {
+      const _id = "__form_" + isomorphicPath(id);
+
+      const onSubmit = async (event: React.FormEvent) => {
+        setMutating(true);
+        event.preventDefault();
+
+        const element = event.target as HTMLFormElement;
+        const form = new FormData(element);
+        const raw = await fetch(element.action, {
+          method: "POST",
+          redirect: "follow",
+          body: form,
+        }).then((res) => res.text());
+        patchSerializedStates(raw);
+
+        setMutating(false);
+      };
+
+      return (
+        <form
+          className="__form"
+          id={_id}
+          method="POST"
+          action={`/actions/${isomorphicPath(id)}`}
+          onSubmit={onSubmit}
+        >
+          {children}
+        </form>
+      );
     };
 
     return (
       <Suspense fallback={"⏳ loading..."}>
-        <DeferredComponent
+        <DeferredComponent<T, K>
           id={_id}
           suspended={suspended}
           render={(state, mutationResult, mutationErrors) => (
@@ -177,8 +230,10 @@ export function withServerState<T, K>(
               children={children}
               invalidate={invalidate}
               invalidating={invalidating}
-              result={mutationResult as K}
-              errors={mutationErrors}
+              result={mutationResult || undefined}
+              errors={mutationErrors || undefined}
+              Form={Form}
+              mutating={mutating}
             />
           )}
         />
@@ -198,28 +253,12 @@ export const mutations: Array<Mutation> = [];
 // as this stuff should not run inside the browser
 export function withServerMutation<T>(
   id: string,
-  exec: (req: Request) => Promise<T>,
-): React.FC<React.PropsWithChildren> {
-  console.log("setting mutations");
+  exec: (
+    req: Request,
+  ) => Promise<{ result?: T; errors?: Record<string, string> }>,
+) {
   mutations.push({
     path: isomorphicPath(id),
     mutation: exec,
   });
-
-  return ({ children }) => {
-    const _id = "__form_" + isomorphicPath(id);
-    // TODO: grab encrypted state from redirected request
-    const req = useContext(RequestCtx);
-
-    return (
-      <form
-        className="__form"
-        id={_id}
-        method="POST"
-        action={`/actions/${isomorphicPath(id)}`}
-      >
-        {children}
-      </form>
-    );
-  };
 }

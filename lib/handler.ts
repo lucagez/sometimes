@@ -9,7 +9,10 @@ export const handler = (
     const file = join(Deno.cwd(), pathname);
 
     // TODO: Should strip out server code from components
-    if ([".ts", ".tsx", ".js", ".jsx"].includes(extname(pathname))) {
+    if (
+      [".ts", ".tsx", ".js", ".jsx"].includes(extname(pathname)) &&
+      !req.url.includes("/actions/")
+    ) {
       const source = new TextDecoder().decode(await Deno.readFile(file));
       const { code } = await transformSource(source);
       return new Response(code, {

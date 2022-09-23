@@ -10,10 +10,6 @@ type LayoutImport = {
   loader: <T>(req: Request) => Promise<T>;
 };
 
-// TODO: replace BASE_PATH
-// @ts-ignore: for now
-globalThis.BASE_PATH = "src";
-
 export async function ssr(req: Request, path: string, layouts: string[]) {
   const importMap = JSON.parse(
     new TextDecoder().decode(await Deno.readFile("./importMap.json")),
@@ -30,9 +26,8 @@ export async function ssr(req: Request, path: string, layouts: string[]) {
     }),
   );
 
-  // TODO: replace BASE_PATH
   const { code } = await transformSource(`
-    window.BASE_PATH = '${"src"}';
+    window.BASE_PATH = '${BASE_PATH}';
 
     import { hydrateRoot } from "react-dom/client";
     import * as React from "react";
@@ -90,6 +85,7 @@ export async function ssr(req: Request, path: string, layouts: string[]) {
   );
 
   if (new URL(req.url).searchParams.get("__state")) {
+    console.log("PRELOADING EVERYTHING! ‼🦊️");
     await stream.allReady;
   }
 
