@@ -3,6 +3,7 @@
 import { createContext, Suspense, useContext, useState } from "react";
 import * as React from "react";
 import { isomorphicPath } from "./isomorphic-path.ts";
+import { valueContainerCSS } from "https://esm.sh/v95/react-select@5.4.0/X-ZS9yZWFjdA/dist/declarations/src/components/containers.d.ts";
 
 function _suspender<T>(exec: Promise<T>) {
   let status = "pending";
@@ -132,7 +133,7 @@ export function withServerState<T, K>(
     Component: React.FC<
       React.PropsWithChildren & {
         data: T;
-        invalidate: () => void;
+        invalidate: (params?: URLSearchParams) => void;
         invalidating: boolean;
         result?: K;
         errors?: Record<string, string>;
@@ -174,10 +175,24 @@ export function withServerState<T, K>(
       }
     };
 
-    const invalidate = async () => {
+    const invalidate = async (params?: URLSearchParams) => {
       setInvalidating(true);
 
       const l = new URL(window.location.href);
+
+      if (params) {
+        params.forEach((value, key) => {
+          l.searchParams.set(key, value);
+        });
+
+        window.history.pushState(
+          {
+            path: l.toString(),
+          },
+          "",
+          l.toString(),
+        );
+      }
       l.searchParams.set("__state", "true");
       const raw = await fetch(l.toString()).then((res) => res.text());
       patchSerializedStates(raw);

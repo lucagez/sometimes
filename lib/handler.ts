@@ -11,7 +11,9 @@ export const handler = (
     // TODO: Should strip out server code from components
     if (
       [".ts", ".tsx", ".js", ".jsx"].includes(extname(pathname)) &&
-      !req.url.includes("/actions/")
+      !req.url.includes("/actions/") &&
+      // TODO: improve whitelist
+      (req.url.includes("/" + BASE_PATH + "/") || req.url.includes("/lib/"))
     ) {
       const source = new TextDecoder().decode(await Deno.readFile(file));
       const { code } = await transformSource(source);

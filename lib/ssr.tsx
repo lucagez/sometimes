@@ -67,6 +67,10 @@ export async function ssr(req: Request, path: string, layouts: string[]) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(importMap) }}
         >
         </script>
+
+        {/* TODO: There should be ability to add global styles (hooks for head / scripts) */}
+        <script src="https://cdn.tailwindcss.com"></script>
+
         <script
           async
           type="module"
