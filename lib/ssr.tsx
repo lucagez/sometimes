@@ -45,7 +45,6 @@ export async function ssr(req: Request, path: string, layouts: string[]) {
   `);
 
   const data = await Promise.all(layoutImports.map((x) => x.loader({} as any)));
-  console.log({ data });
 
   const WithLayouts = Shit(Component, layoutImports.map((x) => x.default));
 
