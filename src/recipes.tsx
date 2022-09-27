@@ -33,7 +33,7 @@ const loader = withServerState(import.meta.url, async (req: Request) => {
   const url = new URL(req.url);
   const ingredientQuery = url.searchParams.get("ingredient") || "";
   const selectedRecipes = recipes
-  // TODO: filter for duplicates inside data.json
+    // TODO: filter for duplicates inside data.json
     .filter((x) => {
       if (ingredientQuery === "") return true;
 
@@ -52,7 +52,7 @@ const loader = withServerState(import.meta.url, async (req: Request) => {
       }
 
       return occurrences.filter(Boolean).length === occurrences.length;
-    })
+    });
 
   const availableIngredients = new Set<string>();
   for (const recipe of selectedRecipes) {
@@ -64,12 +64,14 @@ const loader = withServerState(import.meta.url, async (req: Request) => {
   return {
     number: selectedRecipes.length,
     ingredients: Array.from(availableIngredients).sort(),
-    recipes: selectedRecipes.length > 100 ? selectedRecipes.splice(0, 100) : selectedRecipes,
+    recipes: selectedRecipes.length > 100
+      ? selectedRecipes.splice(0, 100)
+      : selectedRecipes,
   };
 });
 
 const Blog = loader(({ children, data, result, errors, invalidate }) => {
-  console.log('recipes', data.recipes)
+  console.log("recipes", data.recipes);
   return (
     <main className="p-4">
       <h1 className="text-xl font-medium">
@@ -99,24 +101,25 @@ const Blog = loader(({ children, data, result, errors, invalidate }) => {
           // TODO: Open native app
           <a href={recipe.link} key={id}>
             <li className={`flex py-4`}>
-            <img className={`h-24 w-24 rounded-md`} src={recipe.img} alt="" />
-            <div className={`ml-3 cursor-pointer`}>
-              <p className={`text-sm font-medium text-gray-900`}>{recipe.title}</p>
-              <p className={`text-sm text-gray-500`}>{recipe.description}</p>
-              <div className="flex space-x-2 pt-2">
-                <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
-                  ⏱ {recipe.time}
-                </span>
-                <span className="inline-flex items-center rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
-                  🍳 {recipe.difficulty}
-                </span>
+              <img className={`h-24 w-24 rounded-md`} src={recipe.img} alt="" />
+              <div className={`ml-3 cursor-pointer`}>
+                <p className={`text-sm font-medium text-gray-900`}>
+                  {recipe.title}
+                </p>
+                <p className={`text-sm text-gray-500`}>{recipe.description}</p>
+                <div className="flex space-x-2 pt-2">
+                  <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                    ⏱ {recipe.time}
+                  </span>
+                  <span className="inline-flex items-center rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                    🍳 {recipe.difficulty}
+                  </span>
+                </div>
               </div>
-            </div>
-          </li>
+            </li>
           </a>
-          
         ))}
-    </ul>
+      </ul>
     </main>
   );
 });

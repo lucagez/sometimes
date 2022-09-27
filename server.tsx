@@ -6,6 +6,7 @@ import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { common, extname } from "https://deno.land/std@0.153.0/path/mod.ts";
 import { mutations } from "./lib/server.tsx";
 import { join } from "https://deno.land/std@0.153.0/path/win32.ts";
+import { importModule } from "./lib/compiler.ts";
 
 declare global {
   let BUNDLER: boolean;
@@ -18,6 +19,9 @@ declare global {
     BASE_PATH: string;
   }
 }
+
+// RIPARTIRE QUI! <---
+// - Dynamic imports are not supported on dyno deploy ):
 
 window.BASE_PATH = "src";
 window.SECRET = "change_me";
@@ -60,7 +64,7 @@ serve(handler(async (req: Request) => {
 
   if (req.method === "POST" && req.url.includes("/actions/")) {
     // Preload mutation. This is cached no worries
-    await import(
+    await importModule(
       req.url.replace(/.*\/actions\//, "./" + join(".", BASE_PATH) + "/")
     );
 
