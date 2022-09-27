@@ -71,15 +71,14 @@ const loader = withServerState(import.meta.url, async (req: Request) => {
 });
 
 const Blog = loader(({ children, data, result, errors, invalidate }) => {
-  console.log("recipes", data.recipes);
   return (
     <main className="p-4">
-      <h1 className="text-xl font-medium">
+      <h1 className="text-3xl font-medium">
         Recipes 🍱
       </h1>
-      <p>
+      <i>
         There are <b>{data.number}</b> recipes matching these ingredients
-      </p>
+      </i>
       <div className="py-4">
         <Select
           instanceId={"lmao"}

@@ -1,4 +1,6 @@
-import * as esbuild from "esbuild";
+// import * as esbuild from "https://deno.land/x/esbuild@v0.15.9/mod.js";
+import * as esbuild from "https://deno.land/x/esbuild@v0.14.51/mod.js";
+import { denoPlugin } from "https://deno.land/x/esbuild_deno_loader@0.5.2/mod.ts";
 
 // TODO: Transform source should strip out server code
 export async function transformSource(
@@ -9,6 +11,10 @@ export async function transformSource(
   const withoutServerImports = withoutLoaders.split("\n").filter((line) =>
     !line.includes("/server/")
   ).join("\n");
+  // RIPARTIRE QUI! <-- Manifest works ok but mkdir does not on deploy ..
+  // - refactor to use `build` 
+  // - use denoPlugin
+  // - bundle should be false anyway
   const transformed = await esbuild.transform(withoutServerImports, {
     define: {
       "BUNDLER": "true",

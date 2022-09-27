@@ -1,7 +1,7 @@
 import * as React from "react";
 import { isomorphicPath } from "../../lib/isomorphic-path.ts";
 
-export default function Dashboard({ children }: { children: React.ReactNode }) {
+const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
   console.log("meta child layout", isomorphicPath(import.meta.url));
   return (
     <div>
@@ -12,3 +12,5 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+export default Dashboard

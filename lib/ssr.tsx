@@ -2,29 +2,21 @@ import { renderToReadableStream } from "react-dom/server";
 import { RequestCtx } from "./server.tsx";
 import * as React from "react";
 import { transformSource } from "./compiler.ts";
-import { join } from "https://deno.land/std@0.153.0/path/mod.ts";
+import { WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { Shit } from "./shit.tsx";
 
-type LayoutImport = {
-  default: React.FC<React.PropsWithChildren>;
-  loader: <T>(req: Request) => Promise<T>;
-};
+type Entry = WalkEntry & {
+  pattern: string;
+  isLayout: boolean;
+  module: React.FC;
+}
 
-export async function ssr(req: Request, path: string, layouts: string[]) {
+export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
+  // TODO: Remove importmap.json
   const importMap = JSON.parse(
     new TextDecoder().decode(await Deno.readFile("./importMap.json")),
   );
-  const absolutePath = join(Deno.cwd(), path);
-  const { default: Component } = await import(absolutePath);
-  const layoutImports: Array<LayoutImport> = await Promise.all(
-    layouts.map(async (layout) => {
-      const l = await import(join(Deno.cwd(), layout));
-      return {
-        default: l.default as unknown as React.FC<React.PropsWithChildren>,
-        loader: l.loader || (() => ({})),
-      };
-    }),
-  );
+  const Component = entry.module;
 
   const { code } = await transformSource(`
     window.BASE_PATH = '${BASE_PATH}';
@@ -32,9 +24,9 @@ export async function ssr(req: Request, path: string, layouts: string[]) {
     import { hydrateRoot } from "react-dom/client";
     import * as React from "react";
     import { Shit } from './lib/shit.tsx';
-    import App from '${path}';
+    import App from '${'./' + entry.path}';
     ${
-    layouts.map((layout, i) => `import Layout${i} from '${layout}';`).join("\n")
+    layouts.map((layout, i) => `import Layout${i} from '${'./' + layout.path}';`).join("\n")
   }
 
     const WithLayout = Shit(App, [${
@@ -44,10 +36,7 @@ export async function ssr(req: Request, path: string, layouts: string[]) {
     hydrateRoot(document.querySelector("#root"), <WithLayout />);
   `);
 
-  const data = await Promise.all(layoutImports.map((x) => x.loader({} as any)));
-  console.log({ data });
-
-  const WithLayouts = Shit(Component, layoutImports.map((x) => x.default));
+  const WithLayouts = Shit(Component, layouts.map((x) => x.module));
 
   const stream = await renderToReadableStream(
     <html lang="en">

@@ -6,7 +6,7 @@ import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { common, extname } from "https://deno.land/std@0.153.0/path/mod.ts";
 import { mutations } from "./lib/server.tsx";
 import { join } from "https://deno.land/std@0.153.0/path/win32.ts";
-import { importModule } from "./lib/compiler.ts";
+import { routes } from './manifest.ts'
 
 declare global {
   let BUNDLER: boolean;
@@ -20,13 +20,10 @@ declare global {
   }
 }
 
-// RIPARTIRE QUI! <---
-// - Dynamic imports are not supported on dyno deploy ):
-
 window.BASE_PATH = "src";
 window.SECRET = "change_me";
 
-const entries: Array<WalkEntry & { pattern: string; isLayout: boolean }> = [];
+const entries: Array<WalkEntry & { pattern: string; isLayout: boolean; module: React.FC }> = [];
 for await (const entry of walk(BASE_PATH)) {
   const ext = extname(entry.path);
 
@@ -41,6 +38,7 @@ for await (const entry of walk(BASE_PATH)) {
       // TODO: add index functionality
       .replaceAll("$", ":"),
     isLayout: entry.name.startsWith("_layout"),
+    module: routes[entry.path]
   });
 }
 
@@ -56,17 +54,17 @@ serve(handler(async (req: Request) => {
           return entry.pattern
             .includes(layout.pattern.replace("_layout", ""));
         })
-        .map((layout) => "./" + layout.path);
 
-      return new Response(await ssr(req, "./" + entry.path, layouts));
+      return new Response(await ssr(req, entry, layouts));
     }
   }
 
   if (req.method === "POST" && req.url.includes("/actions/")) {
     // Preload mutation. This is cached no worries
-    await importModule(
-      req.url.replace(/.*\/actions\//, "./" + join(".", BASE_PATH) + "/")
-    );
+    // PRELOADING MUTATIONS SHOULD NOT BE NEEDED
+    // await import(
+    //   req.url.replace(/.*\/actions\//, "./" + join(".", BASE_PATH) + "/")
+    // );
 
     for (const mutation of mutations) {
       if (!req.url.endsWith(mutation.path)) continue;
