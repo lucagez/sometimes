@@ -30,4 +30,5 @@ for (const [index, entry] of entries.entries()) {
 }
 manifest += "\nexport { routes };\n";
 
+// TODO: read from args
 await Deno.writeTextFile("./manifest.ts", manifest);
