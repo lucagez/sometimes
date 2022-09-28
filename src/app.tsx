@@ -1,3 +1,5 @@
+/** @jsx React.createElement */
+/** @jsxFrag React.Fragment */
 import { useState } from "react";
 import * as React from "react";
 import { withServerState } from "../lib/server.tsx";

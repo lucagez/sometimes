@@ -1,7 +1,7 @@
 import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { extname } from "https://deno.land/std@0.153.0/path/mod.ts";
 
-window.BASE_PATH = 'src'
+window.BASE_PATH = "src";
 
 const entries: Array<WalkEntry & { pattern: string; isLayout: boolean }> = [];
 for await (const entry of walk(BASE_PATH)) {
@@ -21,12 +21,12 @@ for await (const entry of walk(BASE_PATH)) {
   });
 }
 
-let manifest = 'const routes: Record<string, React.FC> = {};\n'
+let manifest = "const routes: Record<string, React.FC> = {};\n";
 for (const [index, entry] of entries.entries()) {
-  manifest += '\n'
-  manifest += `import Route${index} from "${'./' + entry.path}";\n`
-  manifest += `routes["${entry.path}"] = Route${index};\n`
+  manifest += "\n";
+  manifest += `import Route${index} from "${"./" + entry.path}";\n`;
+  manifest += `routes["${entry.path}"] = Route${index};\n`;
 }
-manifest += '\nexport { routes };\n'
+manifest += "\nexport { routes };\n";
 
-await Deno.writeTextFile('./manifest.ts', manifest)
+await Deno.writeTextFile("./manifest.ts", manifest);

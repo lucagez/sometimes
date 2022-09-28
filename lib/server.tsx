@@ -1,3 +1,5 @@
+/** @jsx React.createElement */
+/** @jsxFrag React.Fragment */
 /// <reference lib="dom" />
 
 import { createContext, Suspense, useContext, useState } from "react";

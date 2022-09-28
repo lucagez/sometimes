@@ -1,3 +1,5 @@
+/** @jsx React.createElement */
+/** @jsxFrag React.Fragment */
 import * as React from "react";
 import Select from "https://esm.sh/react-select@5.4.0?external=react";
 import { withServerState } from "../lib/server.tsx";
@@ -70,57 +72,91 @@ const loader = withServerState(import.meta.url, async (req: Request) => {
   };
 });
 
-const Blog = loader(({ children, data, result, errors, invalidate }) => {
-  return (
-    <main className="p-4">
-      <h1 className="text-3xl font-medium">
-        Recipes 🍱
-      </h1>
-      <i>
-        There are <b>{data.number}</b> recipes matching these ingredients
-      </i>
-      <div className="py-4">
-        <Select
-          instanceId={"lmao"}
-          inputId={"lmao"}
-          onChange={(choice) => {
-            const params = new URLSearchParams({
-              ingredient: Array.from(choice.values()).map(({ value }) => value)
-                .join(","),
-            });
-            invalidate(params);
-          }}
-          isMulti
-          name="ingredients"
-          options={data.ingredients.map((x) => ({ value: x, label: x }))}
-        />
-      </div>
-      <ul role="list" className={`divide-y divide-gray-200`}>
-        {data.recipes.map((recipe, id) => (
-          // TODO: Open native app
-          <a href={recipe.link} key={id}>
-            <li className={`flex py-4`}>
-              <img className={`h-24 w-24 rounded-md`} src={recipe.img} alt="" />
-              <div className={`ml-3 cursor-pointer`}>
-                <p className={`text-sm font-medium text-gray-900`}>
-                  {recipe.title}
-                </p>
-                <p className={`text-sm text-gray-500`}>{recipe.description}</p>
-                <div className="flex space-x-2 pt-2">
-                  <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
-                    ⏱ {recipe.time}
-                  </span>
-                  <span className="inline-flex items-center rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
-                    🍳 {recipe.difficulty}
-                  </span>
+const Blog = loader(
+  ({ children, data, result, errors, invalidate, invalidating }) => {
+    return (
+      <main className="p-4">
+        <h1 className="text-3xl font-medium">
+          Recipes 🍱
+        </h1>
+        <i>
+          There are <b>{data.number}</b> recipes matching these ingredients
+        </i>
+        <div className="py-4">
+          <Select
+            instanceId={"lmao"}
+            inputId={"lmao"}
+            onChange={(choice) => {
+              const params = new URLSearchParams({
+                ingredient: Array.from(choice.values()).map(({ value }) =>
+                  value
+                )
+                  .join(","),
+              });
+              invalidate(params);
+            }}
+            isMulti
+            name="ingredients"
+            options={data.ingredients.map((x) => ({ value: x, label: x }))}
+          />
+        </div>
+        {!invalidating && (
+          <ul role="list" className={`divide-y divide-gray-200`}>
+            {data.recipes.map((recipe, id) => (
+              // TODO: Open native app
+              <a href={recipe.link} key={id}>
+                <li className={`flex py-4`}>
+                  <img
+                    className={`h-24 w-24 rounded-md`}
+                    src={recipe.img}
+                    alt=""
+                  />
+                  <div className={`ml-3 cursor-pointer`}>
+                    <p className={`text-sm font-medium text-gray-900`}>
+                      {recipe.title}
+                    </p>
+                    <p className={`text-sm text-gray-500`}>
+                      {recipe.description}
+                    </p>
+                    <div className="flex space-x-2 pt-2">
+                      <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                        ⏱ {recipe.time}
+                      </span>
+                      <span className="inline-flex items-center rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                        🍳 {recipe.difficulty}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              </a>
+            ))}
+          </ul>
+        )}
+
+        <div className="divide-y">
+          {invalidating && Array(10).fill(0).map((_, i) => {
+            return (
+              <div key={i} className="animate-pulse flex space-x-4 py-4">
+                <div className="rounded-md bg-slate-300 h-24 w-24"></div>
+                <div className="flex-1 space-y-6 py-1">
+                  <div className="h-2 bg-slate-300 rounded"></div>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="h-2 bg-slate-300 rounded col-span-2">
+                      </div>
+                      <div className="h-2 bg-slate-300 rounded col-span-1">
+                      </div>
+                    </div>
+                    <div className="h-2 bg-slate-300 rounded"></div>
+                  </div>
                 </div>
               </div>
-            </li>
-          </a>
-        ))}
-      </ul>
-    </main>
-  );
-});
+            );
+          })}
+        </div>
+      </main>
+    );
+  },
+);
 
 export default Blog;

@@ -1,3 +1,5 @@
+/** @jsx React.createElement */
+/** @jsxFrag React.Fragment */
 import * as React from "react";
 import { isomorphicPath } from "../../lib/isomorphic-path.ts";
 
@@ -11,6 +13,6 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
       </div>
     </div>
   );
-}
+};
 
-export default Dashboard
+export default Dashboard;

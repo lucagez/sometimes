@@ -1,7 +1,10 @@
+/** @jsx React.createElement */
+/** @jsxFrag React.Fragment */
+
 import { renderToReadableStream } from "react-dom/server";
 import { RequestCtx } from "./server.tsx";
 import * as React from "react";
-import { transformSource } from "./compiler.ts";
+import { transformSourceSWC } from "./compiler.ts";
 import { WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { Shit } from "./shit.tsx";
 
@@ -9,7 +12,7 @@ type Entry = WalkEntry & {
   pattern: string;
   isLayout: boolean;
   module: React.FC;
-}
+};
 
 export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
   // TODO: Remove importmap.json
@@ -18,15 +21,17 @@ export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
   );
   const Component = entry.module;
 
-  const { code } = await transformSource(`
+  const { code } = await transformSourceSWC(`
     window.BASE_PATH = '${BASE_PATH}';
 
     import { hydrateRoot } from "react-dom/client";
     import * as React from "react";
     import { Shit } from './lib/shit.tsx';
-    import App from '${'./' + entry.path}';
+    import App from '${"./" + entry.path}';
     ${
-    layouts.map((layout, i) => `import Layout${i} from '${'./' + layout.path}';`).join("\n")
+    layouts.map((layout, i) =>
+      `import Layout${i} from '${"./" + layout.path}';`
+    ).join("\n")
   }
 
     const WithLayout = Shit(App, [${

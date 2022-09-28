@@ -3,10 +3,9 @@ import { ssr } from "./lib/ssr.tsx";
 import { handler } from "./lib/handler.ts";
 import { match } from "./lib/router.ts";
 import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
-import { common, extname } from "https://deno.land/std@0.153.0/path/mod.ts";
+import { extname } from "https://deno.land/std@0.153.0/path/mod.ts";
 import { mutations } from "./lib/server.tsx";
-import { join } from "https://deno.land/std@0.153.0/path/win32.ts";
-import { routes } from './manifest.ts'
+import { routes } from "./manifest.ts";
 
 declare global {
   let BUNDLER: boolean;
@@ -23,7 +22,9 @@ declare global {
 window.BASE_PATH = "src";
 window.SECRET = "change_me";
 
-const entries: Array<WalkEntry & { pattern: string; isLayout: boolean; module: React.FC }> = [];
+const entries: Array<
+  WalkEntry & { pattern: string; isLayout: boolean; module: React.FC }
+> = [];
 for await (const entry of walk(BASE_PATH)) {
   const ext = extname(entry.path);
 
@@ -38,7 +39,7 @@ for await (const entry of walk(BASE_PATH)) {
       // TODO: add index functionality
       .replaceAll("$", ":"),
     isLayout: entry.name.startsWith("_layout"),
-    module: routes[entry.path]
+    module: routes[entry.path],
   });
 }
 
@@ -53,27 +54,22 @@ serve(handler(async (req: Request) => {
         .filter((layout) => {
           return entry.pattern
             .includes(layout.pattern.replace("_layout", ""));
-        })
+        });
 
       return new Response(await ssr(req, entry, layouts));
     }
   }
 
   if (req.method === "POST" && req.url.includes("/actions/")) {
-    // Preload mutation. This is cached no worries
-    // PRELOADING MUTATIONS SHOULD NOT BE NEEDED
-    // await import(
-    //   req.url.replace(/.*\/actions\//, "./" + join(".", BASE_PATH) + "/")
-    // );
-
     for (const mutation of mutations) {
       if (!req.url.endsWith(mutation.path)) continue;
 
       const referer = req.headers.get("referer");
 
-      // TODO: what if?
       if (!referer) {
-        throw new Error("What to do?");
+        return new Response("Not Found", {
+          status: 404,
+        });
       }
 
       // TODO: Should encrypt
