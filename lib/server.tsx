@@ -5,7 +5,6 @@
 import { createContext, Suspense, useContext, useState } from "react";
 import * as React from "react";
 import { isomorphicPath } from "./isomorphic-path.ts";
-import { valueContainerCSS } from "https://esm.sh/v95/react-select@5.4.0/X-ZS9yZWFjdA/dist/declarations/src/components/containers.d.ts";
 
 function _suspender<T>(exec: Promise<T>) {
   let status = "pending";
@@ -122,10 +121,6 @@ function DeferredComponent<T, K>(
 }
 
 export const RequestCtx = createContext<Request | null>(null);
-
-if (typeof window.BUNDLER === "undefined") {
-  window.BUNDLER = false;
-}
 
 export function withServerState<T, K>(
   id: string,

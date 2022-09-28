@@ -1,10 +1,11 @@
 import { walk, WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { extname } from "https://deno.land/std@0.153.0/path/mod.ts";
 
-window.BASE_PATH = "src";
+// TODO: read from args
+let basePath = 'src'
 
 const entries: Array<WalkEntry & { pattern: string; isLayout: boolean }> = [];
-for await (const entry of walk(BASE_PATH)) {
+for await (const entry of walk(basePath)) {
   const ext = extname(entry.path);
 
   if (!entry.isFile) continue;
@@ -13,7 +14,7 @@ for await (const entry of walk(BASE_PATH)) {
   entries.push({
     ...entry,
     pattern: entry.path
-      .replace(BASE_PATH, "")
+      .replace(basePath, "")
       .replace(ext, "")
       // TODO: add index functionality
       .replaceAll("$", ":"),

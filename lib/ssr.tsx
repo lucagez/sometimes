@@ -7,6 +7,7 @@ import * as React from "react";
 import { transformSourceSWC } from "./compiler.ts";
 import { WalkEntry } from "https://deno.land/std@0.153.0/fs/walk.ts";
 import { Shit } from "./shit.tsx";
+import { importMap } from './init.ts'
 
 type Entry = WalkEntry & {
   pattern: string;
@@ -15,14 +16,10 @@ type Entry = WalkEntry & {
 };
 
 export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
-  // TODO: Remove importmap.json
-  const importMap = JSON.parse(
-    new TextDecoder().decode(await Deno.readFile("./importMap.json")),
-  );
   const Component = entry.module;
 
   const { code } = await transformSourceSWC(`
-    window.BASE_PATH = '${BASE_PATH}';
+    window.BASE_PATH = '${'src'}';
 
     import { hydrateRoot } from "react-dom/client";
     import * as React from "react";
@@ -83,7 +80,6 @@ export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
   );
 
   if (new URL(req.url).searchParams.get("__state")) {
-    console.log("PRELOADING EVERYTHING! ‼🦊️");
     await stream.allReady;
   }
 
