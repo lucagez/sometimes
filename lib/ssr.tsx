@@ -23,7 +23,7 @@ export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
 
     import { hydrateRoot } from "react-dom/client";
     import * as React from "react";
-    import { Shit } from './lib/shit.tsx';
+    import { Shit } from 'https://raw.githubusercontent.com/lucagez/sometimes/main/mod.client.ts';
     import App from '${"./" + entry.path}';
     ${
     layouts.map((layout, i) =>
