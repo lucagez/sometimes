@@ -23,17 +23,37 @@ export async function ssr(req: Request, entry: Entry, layouts: Entry[]) {
 
     import { hydrateRoot } from "react-dom/client";
     import * as React from "react";
-    import { Shit } from 'https://raw.githubusercontent.com/lucagez/sometimes/main/mod.client.ts';
     import App from '${"./" + entry.path}';
-    ${
-    layouts.map((layout, i) =>
+    ${layouts.map((layout, i) =>
       `import Layout${i} from '${"./" + layout.path}';`
-    ).join("\n")
-  }
+    ).join("\n")}
+
+    interface Props {
+      children: React.ReactNode;
+    }
+
+    // TODO: Import this file externally. Github serves with wrong MIME
+    export const Shit =
+      (Initial: React.FC, layouts: Array<React.FC<Props>>) => () =>
+        layouts.slice().reverse().reduce((Prev: any, Curr: any, i) => {
+          const P =
+            () => (React.isValidElement(Prev) ? Prev : React.createElement(Prev));
+          const C: React.FC<Props> = (
+            { children },
+          ) => (React.isValidElement(Curr)
+            ? Curr
+            : React.createElement(Curr, null, children));
+
+          return (
+            <C>
+              <P />
+            </C>
+          );
+        }, () => <Initial />) as unknown as React.ReactElement;
 
     const WithLayout = Shit(App, [${
-    layouts.map((_, i) => `Layout${i}`).join(", ")
-  }])
+      layouts.map((_, i) => `Layout${i}`).join(", ")
+    }])
 
     hydrateRoot(document.querySelector("#root"), <WithLayout />);
   `);
