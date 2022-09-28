@@ -14,6 +14,8 @@ try {
   console.log("[CACHE] downloading swc wasm");
   file = await fetch("https://esm.sh/@swc/wasm-web@1.3.2/wasm-web_bg.wasm")
     .then((res) => res.arrayBuffer()) as Uint8Array;
+  
+  // TODO: save file in cache dir. use tmp dir in every env except DENO DEPLOY
   await Deno.writeFile("./wasm-web_bg.wasm", file);
 }
 
